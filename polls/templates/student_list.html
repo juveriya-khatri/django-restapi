@@ -1,0 +1,12 @@
+<div class="main">
+    <table>
+    {% for data in dataset %}.
+    <tr>
+        <td>{{ data.name }}</td>
+        <td>{{ data.contact_number }}</td>
+        <td>{{ data.email_id }}</td>
+    <tr/>
+
+    {% endfor %}
+    </table>
+</div>
