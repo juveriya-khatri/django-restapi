@@ -1,71 +1,50 @@
-from django.shortcuts import render
-from django.http import HttpResponse
 from .models import Student
-from rest_framework import status
-from rest_framework.decorators import api_view
+from django.shortcuts import render
+from django.http import Http404
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from .serializers import StudentSerializer
 
-@api_view(['GET'])
-def apiOverview(request):
-	api_urls = {
-		'List':'/student-list/',
-		'Detail View':'/student-detail/<str:pk>/',
-		'Create':'/student-create/',
-		'Update':'/student-update/<str:pk>/',
-		'Delete':'/student-delete/<str:pk>/',
-		}
 
-	return Response(api_urls)
+class StudentList(APIView):
+	def get(self, request, format=None):
+		students = Student.objects.all().order_by('id')
+		serializer = StudentSerializer(students, many=True)
+		return Response(serializer.data)
 
+	def post(self, request, format=None):
+		serializer = StudentSerializer(data=request.data)
 
-@api_view(['GET'])
-def studentList(request):
-	students = Student.objects.all().order_by('id')
-	serializer = StudentSerializer(students, many=True)
-	return Response(serializer.data)
+		if serializer.is_valid():
+			serializer.save()
+
+		return Response(serializer.data)
 
 
-@api_view(['GET'])
-def studentDetail(request, pk):
-	students = Student.objects.get(id=pk)
-	serializer = StudentSerializer(students, many=False)
-	return Response(serializer.data)
+class StudentDetail(APIView):
+	def get_object(self, pk):
+		try:
+			return Student.objects.get(id=pk)
+		except Student.DoesNotExist:
+			raise Http404
 
+	def get(self, request, pk, format=None):
+		students =self.get_object(pk)
+		serializer = StudentSerializer(students, many=False)
+		return Response(serializer.data)
 
-@api_view(['POST'])
-def studentCreate(request):
-	serializer = StudentSerializer(data=request.data)
+	def put(self, request, pk, format=None):
+		student = self.get_object(pk)
+		serializer = StudentSerializer(instance=student, data=request.data)
 
-	if serializer.is_valid():
-		serializer.save()
+		if serializer.is_valid():
+			serializer.save()
 
-	return Response(serializer.data)
+		return Response(serializer.data)
 
+	def delete(self, request, pk, format=None):
+		student = self.get_object(pk)
+		student.delete()
 
-@api_view(['POST'])
-def studentUpdate(request, pk):
-	student = Student.objects.get(id=pk)
-	serializer = StudentSerializer(instance=student, data=request.data)
-
-	if serializer.is_valid():
-		serializer.save()
-
-	return Response(serializer.data)
-
-
-@api_view(['DELETE'])
-def studentDelete(request, pk):
-	student = Student.objects.get(id=pk)
-	student.delete()
-
-	return Response('Item Deleted!')
-
-
-def listview(request):
-    context = {}
-
-    context["dataset"] = Student.objects.all()
-
-    return render(request, "student_list.html", context)
-
+		return Response('Item Deleted!')
